@@ -5,10 +5,11 @@ export default function Home() {
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
      
       <button onClick={() => {
-window.navigator.usb.requestDevice({
-  filters: [],
-});
-      }}> webusb pairing</button>
+        window.navigator.usb.requestDevice({
+          filters: [],
+        });
+      }}> webusb pairing with host</button>
+
       <button onClick={() => {
         console.log('trezorConnect', window.TrezorConnect);
         TrezorConnect.init({
@@ -27,7 +28,7 @@ window.navigator.usb.requestDevice({
           })
         }
       );
-      }}> get address</button>
+      }}> TrezorConnect.getAddress</button>
       
 
        
