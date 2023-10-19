@@ -211,9 +211,6 @@ exports.v = {
     origin: 'sldev.cz',
     priority: 0
   }, {
-    origin: 'localhost',
-    priority: 0
-  }, {
     origin: 'trezoriovpjcahpzkrewelclulmszwbqpzmzgub37gbcjlvluxtruqad.onion',
     priority: 0
   }],
@@ -262,11 +259,14 @@ exports.v = {
     name: 'bridge',
     url: './data/bridge/releases.json'
   }, {
-    name: 'firmware-t1',
-    url: './data/firmware/1/releases.json'
+    name: 'firmware-t1b1',
+    url: './data/firmware/t1b1/releases.json'
   }, {
-    name: 'firmware-t2',
-    url: './data/firmware/2/releases.json'
+    name: 'firmware-t2t1',
+    url: './data/firmware/t2t1/releases.json'
+  }, {
+    name: 'firmware-t2b1',
+    url: './data/firmware/t2b1/releases.json'
   }],
   messages: './data/messages/messages.json',
   supportedBrowsers: {
@@ -684,7 +684,6 @@ const ui_request_1 = __webpack_require__(8851);
 exports.POPUP = {
   BOOTSTRAP: 'popup-bootstrap',
   LOADED: 'popup-loaded',
-  CORE_LOADED: 'popup-core-loaded',
   INIT: 'popup-init',
   ERROR: 'popup-error',
   EXTENSION_USB_PERMISSIONS: 'open-usb-permissions',
@@ -1126,6 +1125,10 @@ const factory = ({
       ...params,
       method: 'applySettings'
     }),
+    authenticateDevice: params => call({
+      ...params,
+      method: 'authenticateDevice'
+    }),
     authorizeCoinjoin: params => call({
       ...params,
       method: 'authorizeCoinjoin'
@@ -1408,16 +1411,14 @@ var __webpack_unused_export__;
 __webpack_unused_export__ = ({
   value: true
 });
-__webpack_unused_export__ = __webpack_unused_export__ = __webpack_unused_export__ = exports.Yn = exports.KR = __webpack_unused_export__ = exports.O9 = void 0;
+__webpack_unused_export__ = __webpack_unused_export__ = __webpack_unused_export__ = exports.Yn = exports.KR = void 0;
 const green = '#bada55';
 const blue = '#20abd8';
 const orange = '#f4a744';
 const yellow = '#fbd948';
-exports.O9 = {
+const colors = {
   '@trezor/connect': `color: ${blue}; background: #000;`,
   '@trezor/connect-web': `color: ${blue}; background: #000;`,
-  '@trezor/connect-webextension': `color: ${blue}; background: #000;`,
-  '@trezor/connect-webextension/serviceWorkerWindowChannel': `color: ${blue}; background: #000;`,
   IFrame: `color: ${orange}; background: #000;`,
   Core: `color: ${orange}; background: #000;`,
   DeviceList: `color: ${green}; background: #000;`,
@@ -1433,7 +1434,7 @@ class Log {
     this.prefix = prefix;
     this.enabled = enabled;
     this.messages = [];
-    this.css = typeof window !== 'undefined' && exports.O9[prefix] ? exports.O9[prefix] : '';
+    this.css = typeof window !== 'undefined' && colors[prefix] ? colors[prefix] : '';
     if (logWriter) {
       this.logWriter = logWriter;
     }
@@ -1490,7 +1491,6 @@ class Log {
     }
   }
 }
-__webpack_unused_export__ = Log;
 const _logs = {};
 let writer;
 const initLog = (prefix, enabled, logWriter) => {
@@ -4241,6 +4241,102 @@ const showPopupRequest = (open, cancel) => {
     }
   };
 };
+;// CONCATENATED MODULE: ./src/overlay/index.ts
+const createFlexBox = element => {
+  const flexBoxVariants = {
+    flex: {
+      'flex-direction': 'column',
+      'align-items': 'center'
+    },
+    '-webkit-flex': {
+      '-webkit-flex-direction': 'column',
+      '-webkit-align-items': 'center'
+    },
+    // '-webkit-box': {
+    //     '-webkit-box-orient': 'vertical',
+    //     '-webkit-box-direction': 'normal',
+    //     '-webkit-box-align': 'center',
+    // },
+    '-ms-flexbox': {
+      '-ms-flex-direction': 'column',
+      '-ms-flex-align': 'center'
+    }
+  };
+  const flexBoxKeys = Object.keys(flexBoxVariants);
+
+  // try each possible value, getComputedStyle will not return valid value if it's not supported by the browser
+  for (let i = 0; i < flexBoxKeys.length; i++) {
+    const flexBoxKey = flexBoxKeys[i];
+    element.style.display = flexBoxKey;
+    if (window.getComputedStyle(element, null).display === flexBoxKey) {
+      const alignment = flexBoxVariants[flexBoxKey];
+      Object.keys(alignment).forEach(alignKey => {
+        element.style[alignKey] = alignment[alignKey];
+      });
+      break;
+    }
+  }
+};
+const getMaxZIndex = () => Math.max(...Array.from(document.querySelectorAll('body *'), el => parseFloat(window.getComputedStyle(el).zIndex)).filter(zIndex => !Number.isNaN(zIndex)), 0).toString();
+const showOverlay = css => {
+  if (!document.body) return {
+    overlay: null,
+    container: null
+  };
+  const overlay = document.createElement('div');
+  overlay.style.position = 'fixed';
+  overlay.style.overflow = 'auto';
+  overlay.style.zIndex = getMaxZIndex();
+  overlay.style.width = '100%';
+  overlay.style.height = '100%';
+  overlay.style.top = '0';
+  overlay.style.left = '0';
+  overlay.style.padding = '20px';
+  overlay.style.margin = '0px';
+  overlay.style.background = 'rgba(0, 0, 0, .35)';
+  document.body.appendChild(overlay);
+  const container = document.createElement('div');
+  container.style.position = 'relative';
+  container.style.overflow = 'hidden';
+  container.style.display = 'block';
+  container.style.width = '100%';
+  container.style.height = '100%';
+  container.style.margin = 'auto';
+  if (css) {
+    // TODO: any
+    Object.keys(css).forEach(key => {
+      // Object.keys(css).forEach(key => {
+      container.style[key] = css[key];
+    });
+  }
+  overlay.appendChild(container);
+  createFlexBox(overlay);
+  return {
+    overlay,
+    container
+  };
+};
+const hideOverlay = overlay => {
+  document.body?.removeChild(overlay);
+};
+const showPopupOverlay = src => {
+  const {
+    overlay,
+    container
+  } = showOverlay({
+    maxWidth: '80vh',
+    maxHeight: '70vh'
+  });
+  const view = document.createElement('iframe');
+  view.frameBorder = '0px';
+  view.style.width = '100%';
+  view.style.height = '100%';
+  view.style.border = '0px';
+  view.setAttribute('allow', 'usb');
+  view.setAttribute('src', src);
+  container?.appendChild(view);
+  return overlay;
+};
 ;// CONCATENATED MODULE: ./src/popup/index.ts
 // origin: https://github.com/trezor/connect/blob/develop/src/js/popup/PopupManager.js
 
@@ -4250,8 +4346,9 @@ const showPopupRequest = (open, cancel) => {
 
 
 
+
 // Event `POPUP_REQUEST_TIMEOUT` is used to close Popup window when there was no handshake from iframe.
-const POPUP_REQUEST_TIMEOUT = 850;
+const POPUP_REQUEST_TIMEOUT = 1; // 850;
 const POPUP_CLOSE_INTERVAL = 500;
 const POPUP_OPEN_TIMEOUT = 3000;
 class PopupManager extends (events_default()) {
@@ -4458,6 +4555,17 @@ class PopupManager extends (events_default()) {
       }
       // popup is successfully loaded
       this.iframeHandshake.promise.then(payload => {
+        if (this.popupOverlay) {
+          message.source?.postMessage({
+            type: lib_exports.POPUP.INIT,
+            payload: {
+              ...payload,
+              settings: this.settings
+            }
+          });
+          return;
+        }
+
         // send ConnectSettings to popup
         // note this settings and iframe.ConnectSettings could be different (especially: origin, popup, webusb, debug)
         // now popup is able to load assets
@@ -4469,6 +4577,11 @@ class PopupManager extends (events_default()) {
           }
         }, this.origin);
       });
+    } else if (data.type === 'request-webusb') {
+      clearInterval(this.closeInterval);
+      this.popupOverlay = showPopupOverlay(this.settings.popupSrc);
+      this.popupWindow.close();
+      this.popupWindow = null;
     } else if (data.type === lib_exports.POPUP.CANCEL_POPUP_REQUEST || data.type === lib_exports.UI.CLOSE_UI_WINDOW) {
       this.clear(false);
     }
@@ -4500,6 +4613,10 @@ class PopupManager extends (events_default()) {
         active: true
       });
       this.extensionTabId = 0;
+    }
+    if (this.popupOverlay) {
+      hideOverlay(this.popupOverlay);
+      this.popupOverlay = null;
     }
   }
   close() {
@@ -4583,6 +4700,18 @@ const getEnv = () => {
   }
   return 'web';
 };
+const processQueryString = (url, keys) => {
+  const searchParams = new URLSearchParams(url);
+  const result = {};
+  const paramArray = Array.from(searchParams.entries());
+  paramArray.forEach(([key, value]) => {
+    if (keys.includes(key)) {
+      result[key] = decodeURIComponent(value);
+    }
+  });
+  return result;
+};
+
 /**
  * Settings from host
  * @param input Partial<ConnectSettings>
@@ -4604,16 +4733,18 @@ const parseConnectSettings = (input = {}) => {
     settings.connectSrc = globalSrc;
     settings.debug = true;
   }
-
-  // For debugging purposes `connectSrc` could be defined in url query of hosting page. Usage:
-  // https://3rdparty-page.com/?trezor-connect-src=https://localhost:8088/
   if (typeof window !== 'undefined' && typeof window.location?.search === 'string') {
-    const vars = window.location.search.split('&');
-    const customUrl = vars.find(v => v.indexOf('trezor-connect-src') >= 0);
-    if (customUrl) {
-      const [, connectSrc] = customUrl.split('=');
-      settings.connectSrc = decodeURIComponent(connectSrc);
+    const query = processQueryString(window.location.search, ['trezor-connect-src', 'trust-issues']);
+    // For debugging purposes `connectSrc` could be defined in url query of hosting page. Usage:
+    // https://3rdparty-page.com/?trezor-connect-src=https://localhost:8088/
+    if (query['trezor-connect-src']) {
       settings.debug = true;
+      settings.connectSrc = query['trezor-connect-src'];
+    }
+
+    // Even if connect is running on trusted domain we can override it with `trust-issues=true` query param.
+    if (query['trust-issues'] === 'true') {
+      settings.trustedHost = false;
     }
   }
   if (typeof input.env !== 'string') {
