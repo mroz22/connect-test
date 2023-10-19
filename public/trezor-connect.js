@@ -4562,7 +4562,9 @@ class PopupManager extends (events_default()) {
               ...payload,
               settings: this.settings
             }
-          });
+          },
+          // @ts-expect-error
+          '*');
           return;
         }
 
